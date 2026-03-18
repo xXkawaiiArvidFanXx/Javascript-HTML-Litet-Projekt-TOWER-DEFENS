@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tower Defense</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Verdana, sans-serif;
+            background: #222;
+            color: #eee;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        #gameCanvas {
+            background: #333;
+            border: 3px solid #555;
+            /* use same size as the canvas attributes so clicks map correctly */
+            width: 800px;
+            height: 500px;
+            display: block;
+        }
+        .ui {
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .difficulty-menu {
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .difficulty-menu button {
+            margin: 0 5px;
+            padding: 5px 10px;
+            background: #444;
+            color: #fff;
+            border: 1px solid #777;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .difficulty-menu button.selected {
+            background: #0f0;
+            color: #000;
+            font-weight: bold;
+            border-color: #0f0;
+        }
+        .ui span {
+            margin-right: 30px;
+            font-size: 1.1em;
+        }
+        .instructions {
+            margin-top: 20px;
+            font-size: 0.9em;
+            color: #aaa;
+            max-width: 1020px;
+            text-align: center;
+            line-height: 1.5;
+        }
+        .game-container {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        .right-panel {
+            width: 220px;
+            flex-shrink: 0;
+        }
+        .tower-menu {
+            background: #444;
+            padding: 15px;
+            border: 2px solid #888;
+            border-radius: 5px;
+            color: #fff;
+            margin-bottom: 20px;
+        }
+        .tower-menu h3 {
+            margin-bottom: 10px;
+            color: #0f0;
+        }
+        .tower-option {
+            background: #555;
+            padding: 10px;
+            margin: 8px 0;
+            border: 2px solid #777;
+            border-radius: 3px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .tower-option:hover {
+            background: #666;
+            border-color: #0f0;
+        }
+        .tower-option.selected {
+            background: #0f0;
+            color: #000;
+            font-weight: bold;
+            border-color: #0f0;
+        }
+        .tower-option .cost {
+            font-size: 0.85em;
+            color: #ffd700;
+        }
+        #upgradeMenu {
+            background: #444;
+            padding: 15px;
+            border: 2px solid #888;
+            border-radius: 5px;
+            color: #fff;
+            display: none;
+        }
+        #upgradeMenu h3 {
+            margin-bottom: 10px;
+            color: #0f0;
+        }
+        #upgradeMenu button {
+            display: block;
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        #upgradeMenu button:hover {
+            background: #764ba2;
+        }
+        #upgradeMenu div {
+            margin: 8px 0;
+            font-size: 0.9em;
+        }
+        .pause-indicator {
+            background: #ff4444;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: none;
+        }
+        .message {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 4px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            font-size: 0.9em;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <div class="difficulty-menu">
+        <span>Svårighetsgrad: </span>
+        <button id="easyBtn">Lätt</button>
+        <button id="mediumBtn">Medel</button>
+        <button id="hardBtn">Svår</button>
+        <button id="lavaBtn">The Floor is LAVA</button>
+    </div>
+    <div class="ui">
+        <span>Pengar: <strong id="money">0</strong></span>
+        <span>Hälsa: <strong id="health">0</strong></span>
+        <span>Vågor: <strong id="wave">0</strong></span>
+        <span>Svårighet: <strong id="diff">Lätt</strong></span>
+    </div>
+    <div class="game-container">
+        <canvas id="gameCanvas" width="800" height="500"></canvas>
+        <div class="right-panel">
+            <div class="pause-indicator" id="pauseIndicator">PAUSAT</div>
+            <div class="tower-menu">
+                <h3>Välj torn</h3>
+                <div class="tower-option" data-tower="gun">
+                    <div>Gun Tower</div>
+                    <div class="cost">Kostnad: 100</div>
+                </div>
+                <div class="tower-option" data-tower="sniper">
+                    <div>Sniper Tower</div>
+                    <div class="cost">Kostnad: 250</div>
+                </div>
+                <div class="tower-option" data-tower="pirate">
+                    <div>Piratbåt</div>
+                    <div class="cost">Kostnad: 550</div>
+                </div>
+                <div class="tower-option" data-tower="blikten">
+                    <div>Blixtrar</div>
+                    <div class="cost">Kostnad: 1000</div>
+                </div>
+                <div class="tower-option" data-tower="kanon">
+                    <div>Kanon</div>
+                    <div class="cost">Kostnad: 800</div>
+                </div>
+            </div>
+            <div id="upgradeMenu">
+                <h3>Torn Info</h3>
+                <div>Torn #<span id="menuTowerNum">-</span></div>
+                <div>Level: <span id="menuLevel">-</span></div>
+                <div>Skada: <span id="menuDamage">-</span></div>
+                <div>Skjuthastighet: <span id="menuFireRate">-</span></div>
+                <div>Räckvidd: <span id="menuRange">-</span></div>
+                <hr style="margin: 10px 0; border-color: #666;">
+                <button id="upgradeDamageBtn">Uppgradera Skada (15)</button>
+                <button id="upgradeFireRateBtn">Uppgradera Hastighet (15)</button>
+                <button id="upgradeRangeBtn">Uppgradera Räckvidd (20)</button>
+            </div>
+        </div>
+    </div>
+    <div id="message" class="message"></div>
+    <div class="instructions">
+        <strong>Kontroller:</strong><br>
+        0. Välj svårighetsgrad ovan innan första vågen (Lätt / Medel / Svår)<br>
+        1. Välj ett torn från menyn till höger<br>
+        2. Klicka på banan för att bygga (grön = normal, mörkgrå = cliff_towers, blå = water_towers)<br>
+        3. Klicka på ett torn för att uppgradera (varje gren max 5 gånger, men om en gren når 5, andra grenar max 3 gånger)<br>
+        4. MELLANSLAGSTANGENTEN = Pausa/Fortsätt<br>
+        5. Rundorna startar automatiskt när förra rundan är slut<br>
+        <strong>Hälsa:</strong> Börja med 100/50/1 hälsa för Lätt/Medel/Svår. Varje cirkel som når slutet tar bort hälsa motsvarande sin styrka. När din hälsa når noll är spelet slut.<br>
+        <strong>Bantyper:</strong> Grön = Du kan bygga torn | Ljusgrå = Fiendernas väg | Mörkgrå = Bara cliff_towers | Blå = Vatten (fiender går här)<br>
+        <strong>Torntyper:</strong> Gun Tower (land, 75 pengar), Sniper Tower (cliff, 250 pengar), Piratbåt (vatten, 550 pengar), Blixtrar (land, 1000 pengar - skjuter blixtar mot upp till 8 fiender), Kanon (cliff, 800 pengar - AoE skada)<br>
+        <strong>Uppgraderingar:</strong> Skada/Hastighet kostar 15 pengar, Räckvidd 20 pengar. Varje uppgradering ökar staten additivt.
+    </div>
+    <script src="main.js"></script>
+</body>
+</html>
